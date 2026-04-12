@@ -38,7 +38,7 @@ import Metrics
 # Config
 # ─────────────────────────────────────────────────────────────────
 VOC_ROOT       = "./data/fss-data/VOCdevkit/VOC2012"   # ← CHANGE THIS
-K_SHOT         = 1         # 1-shot or 5-shot
+K_SHOT         = 5         # 1-shot or 5-shot
 BACKBONE_NAME  = "resnet50"
 BATCH_SIZE     = 8
 NUM_EPOCHS     = 10
