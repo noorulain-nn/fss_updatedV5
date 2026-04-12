@@ -37,7 +37,7 @@ import Metrics
 # ─────────────────────────────────────────────────────────────────
 # Config
 # ─────────────────────────────────────────────────────────────────
-VOC_ROOT       = "/data/VOCdevkit/VOC2012"   # ← CHANGE THIS
+VOC_ROOT       = "./data/fss-data"   # ← CHANGE THIS
 FOLD           = 0         # which 5 classes are novel (0,1,2,3)
 K_SHOT         = 1         # 1-shot or 5-shot
 BACKBONE_NAME  = "resnet50"
