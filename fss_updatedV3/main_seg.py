@@ -37,8 +37,7 @@ import Metrics
 # ─────────────────────────────────────────────────────────────────
 # Config
 # ─────────────────────────────────────────────────────────────────
-VOC_ROOT       = "./data/fss-data/VOCdevkit/VOC2012"   # ← CHANGE THIS
-FOLD           = 0         # which 5 classes are novel (0,1,2,3)
+VOC_ROOT       = "/data/VOCdevkit/VOC2012"   # ← CHANGE THIS
 K_SHOT         = 1         # 1-shot or 5-shot
 BACKBONE_NAME  = "resnet50"
 BATCH_SIZE     = 8
@@ -47,35 +46,7 @@ LEARNING_RATE  = 0.001
 IMG_SIZE       = 224
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Device: {device}  |  Backbone: {BACKBONE_NAME}  |  {K_SHOT}-shot  |  Fold {FOLD}")
-
-# ─────────────────────────────────────────────────────────────────
-# Load data
-# ─────────────────────────────────────────────────────────────────
-train_loader, val_loader, NUM_BASE = Data_Loader.prepare_base_loaders(
-    voc_root   = VOC_ROOT,
-    fold       = FOLD,
-    batch_size = BATCH_SIZE,
-)
-
-novel_dataset, novel_classes = Data_Loader.prepare_novel_dataset(
-    voc_root = VOC_ROOT,
-    fold     = FOLD,
-)
-
-# ─────────────────────────────────────────────────────────────────
-# Build model
-# ─────────────────────────────────────────────────────────────────
-backbone, FEATURE_DIM = Models.load_backbone(BACKBONE_NAME)
-model = APM.SegAPM(backbone, NUM_BASE, FEATURE_DIM).to(device)
-
-criterion = nn.CrossEntropyLoss(ignore_index=255)
-optimizer = optim.Adam(
-    filter(lambda p: p.requires_grad, model.parameters()),
-    lr=LEARNING_RATE
-)
-scheduler = StepLR(optimizer, step_size=1, gamma=0.30)
-
+print(f"Device: {device}  |  Backbone: {BACKBONE_NAME}  |  {K_SHOT}-shot")
 
 # ─────────────────────────────────────────────────────────────────
 # Shared helpers
@@ -297,21 +268,70 @@ def phase3_test(novel_classes, query_data):
 
 
 # ─────────────────────────────────────────────────────────────────
-# RUN ALL 3 PHASES
+# RUN ALL 3 PHASES FOR ALL 4 FOLDS
 # ─────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # ── Phase 1 ──
-    phase1_val_miou = phase1_train()
+    all_fold_results = []
+    
+    for FOLD in range(4):  # Pascal 5-i has 4 folds
+        print(f"\n{'='*60}")
+        print(f"  FOLD {FOLD}")
+        print(f"{'='*60}")
+        
+        # ─── Load data for this fold ───
+        train_loader, val_loader, NUM_BASE = Data_Loader.prepare_base_loaders(
+            voc_root   = VOC_ROOT,
+            fold       = FOLD,
+            batch_size = BATCH_SIZE,
+        )
 
-    # ── Phase 2 ──
-    query_data = phase2_adapt(novel_dataset, novel_classes, K_SHOT)
+        novel_dataset, novel_classes = Data_Loader.prepare_novel_dataset(
+            voc_root = VOC_ROOT,
+            fold     = FOLD,
+        )
 
-    # ── Phase 3 ──
-    novel_miou = phase3_test(novel_classes, query_data)
+        # ─── Build model for this fold ───
+        backbone, FEATURE_DIM = Models.load_backbone(BACKBONE_NAME)
+        model = APM.SegAPM(backbone, NUM_BASE, FEATURE_DIM).to(device)
+        
+        criterion = nn.CrossEntropyLoss(ignore_index=255)
+        optimizer = optim.Adam(
+            filter(lambda p: p.requires_grad, model.parameters()),
+            lr=LEARNING_RATE
+        )
+        scheduler = StepLR(optimizer, step_size=1, gamma=0.30)
+        
+        # ── Phase 1 ──
+        phase1_val_miou = phase1_train()
 
+        # ── Phase 2 ──
+        query_data = phase2_adapt(novel_dataset, novel_classes, K_SHOT)
+
+        # ── Phase 3 ──
+        novel_miou = phase3_test(novel_classes, query_data)
+
+        all_fold_results.append({
+            'fold': FOLD,
+            'phase1_miou': phase1_val_miou,
+            'phase3_miou': novel_miou
+        })
+
+        print("\n" + "="*60)
+        print("  FOLD RESULTS")
+        print("="*60)
+        print(f"  Phase 1 best val mIoU  (base classes) = {phase1_val_miou*100:.2f}%")
+        print(f"  Phase 3 mean mIoU    (novel classes)  = {novel_miou*100:.2f}%")
+        print(f"  Setting: Fold={FOLD} | {K_SHOT}-shot | {BACKBONE_NAME}")
+    
+    # Print cross-fold summary
     print("\n" + "="*60)
-    print("  FINAL RESULTS")
+    print("  4-FOLD CROSS-VALIDATION SUMMARY (Pascal 5-i)")
     print("="*60)
-    print(f"  Phase 1 best val mIoU  (base classes) = {phase1_val_miou*100:.2f}%")
-    print(f"  Phase 3 mean mIoU    (novel classes)  = {novel_miou*100:.2f}%")
-    print(f"  Setting: Fold={FOLD} | {K_SHOT}-shot | {BACKBONE_NAME}")
+    for result in all_fold_results:
+        print(f"  Fold {result['fold']}: Base={result['phase1_miou']*100:.2f}% | Novel={result['phase3_miou']*100:.2f}%")
+    
+    avg_phase1 = sum(r['phase1_miou'] for r in all_fold_results) / len(all_fold_results)
+    avg_phase3 = sum(r['phase3_miou'] for r in all_fold_results) / len(all_fold_results)
+    print(f"\n  Average Phase 1 mIoU = {avg_phase1*100:.2f}%")
+    print(f"  Average Phase 3 mIoU = {avg_phase3*100:.2f}%")
+    print("="*60)
