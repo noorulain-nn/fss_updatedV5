@@ -97,7 +97,7 @@ class MemoryModule(nn.Module):
         mem_T     = mem.t()                                  # [D, S]
         sim       = torch.einsum('bdi,ds->bsi',
                                  feat_flat,
-                                 mem_T.unsqueeze(0).expand(B, -1, -1))
+                                 mem_T)
         # einsum gives [B, S, h*w] → reshape to [B, S, h, w]
         logits = sim.view(B, S, h, w)
         return logits
