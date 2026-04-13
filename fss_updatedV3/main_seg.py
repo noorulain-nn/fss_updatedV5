@@ -189,7 +189,7 @@ def phase2_adapt(novel_dataset, novel_classes, k_shot):
 
         # Get K support images and all query images for this class
         support, queries = novel_dataset.get_support_and_queries(
-            cls_id, k_shot=k_shot, seed=342
+            cls_id, k_shot=k_shot, seed=442
         )
         support_data[cls_id] = queries   # save queries for Phase 3
 
