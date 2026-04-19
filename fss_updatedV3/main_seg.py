@@ -282,7 +282,7 @@ if __name__ == "__main__":
         # ─── Load data for this fold ───
         train_loader, val_loader, NUM_BASE = Data_Loader.prepare_base_loaders(
             voc_root   = VOC_ROOT,
-            sbd_root=SBD_ROOT.
+            sbd_root=SBD_ROOT,
             fold       = FOLD,
             batch_size = BATCH_SIZE,
         )
