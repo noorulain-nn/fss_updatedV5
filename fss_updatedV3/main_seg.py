@@ -37,7 +37,8 @@ import Metrics
 # ─────────────────────────────────────────────────────────────────
 # Config
 # ─────────────────────────────────────────────────────────────────
-VOC_ROOT       = "./data/fss-data/VOCdevkit/VOC2012"   # ← CHANGE THIS
+VOC_ROOT            =  "./data/fss-data/VOCdevkit/VOC2012" #"C:\\data\\VOCdevkit\\VOC2012"             #"./data/fss-data/VOCdevkit/VOC2012" C:\data\sbd\benchmark_RELEASE/dataset
+SBD_ROOT            =  "./data/fss-data/sbd/benchmark_RELEASE/dataset"#"C:\\data\\sbd\\benchmark_RELEASE\\dataset"   
 K_SHOT         = 5         # 1-shot or 5-shot
 BACKBONE_NAME  = "resnet50"
 BATCH_SIZE     = 8
@@ -281,6 +282,7 @@ if __name__ == "__main__":
         # ─── Load data for this fold ───
         train_loader, val_loader, NUM_BASE = Data_Loader.prepare_base_loaders(
             voc_root   = VOC_ROOT,
+            sbd_root=SBD_ROOT.
             fold       = FOLD,
             batch_size = BATCH_SIZE,
         )
